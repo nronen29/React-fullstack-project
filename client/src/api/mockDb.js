@@ -54,6 +54,7 @@ export const mockDb = {
         {
           id: 'exam-1-q1',
           examId: 'exam-1',
+          type: 'multiple_choice',
           text: 'What does `typeof null` evaluate to in JavaScript?',
           options: ['"null"', '"undefined"', '"object"', '"number"'],
           correctIndex: 2,

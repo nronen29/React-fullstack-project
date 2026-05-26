@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getExamById } from './api/examService.js'
+import { getExamById, getQuestionType } from './api/examService.js'
 
 export default function StudentPortal() {
   const [examId, setExamId] = useState('')
@@ -82,20 +82,48 @@ export default function StudentPortal() {
             <small className="text-muted">ID: {exam.id}</small>
           </div>
           <ul className="list-group list-group-flush">
-            {(exam.questions ?? []).map((q, index) => (
-              <li key={q.id ?? index} className="list-group-item">
-                <p className="fw-semibold mb-2">
-                  {index + 1}. {q.text}
-                </p>
-                {Array.isArray(q.options) && (
-                  <ol className="mb-0 small text-muted">
-                    {q.options.map((opt, i) => (
-                      <li key={i}>{opt}</li>
-                    ))}
-                  </ol>
-                )}
-              </li>
-            ))}
+            {(exam.questions ?? []).map((q, index) => {
+              const type = getQuestionType(q)
+              return (
+                <li key={q.id ?? index} className="list-group-item">
+                  <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
+                    <p className="fw-semibold mb-0">
+                      {index + 1}. {q.text}
+                    </p>
+                    <span className="badge text-bg-secondary">
+                      {type === 'open' ? 'Open' : '4 options'}
+                    </span>
+                  </div>
+                  {type === 'multiple_choice' && Array.isArray(q.options) && (
+                    <div className="vstack gap-2">
+                      {q.options.map((opt, i) => (
+                        <label key={i} className="form-check border rounded px-3 py-2 mb-0">
+                          <input
+                            type="radio"
+                            className="form-check-input"
+                            name={`q-${q.id}`}
+                            value={i}
+                            readOnly
+                          />
+                          <span className="form-check-label ms-1">
+                            {String.fromCharCode(65 + i)}. {opt}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {type === 'open' && (
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      placeholder="Type your answer here…"
+                      readOnly={false}
+                      aria-label={`Answer for question ${index + 1}`}
+                    />
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
