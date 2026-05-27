@@ -25,6 +25,29 @@ function nextQuestionId(examId, existingQuestions = []) {
   return `${examId}-q${max + 1}`
 }
 
+export const DEFAULT_QUESTION_MINUTES = 2
+
+export function getQuestionTimeMinutes(question) {
+  return Math.max(1, Number(question?.timeMinutes) || DEFAULT_QUESTION_MINUTES)
+}
+
+/** Total exam time in seconds — sum of each question's timeMinutes. */
+export function getExamTimeLimitSeconds(exam) {
+  const questions = exam?.questions ?? []
+  if (questions.length === 0) {
+    return Math.max(60, (Number(exam?.durationMinutes) || 30) * 60)
+  }
+  const totalMinutes = questions.reduce((sum, q) => sum + getQuestionTimeMinutes(q), 0)
+  return totalMinutes * 60
+}
+
+export function formatTimeRemaining(totalSeconds) {
+  const seconds = Math.max(0, Math.ceil(totalSeconds))
+  const minutes = Math.floor(seconds / 60)
+  const remainder = seconds % 60
+  return `${minutes}:${String(remainder).padStart(2, '0')}`
+}
+
 /** @returns {'multiple_choice' | 'open'} */
 export function getQuestionType(question) {
   if (question?.type === 'open' || question?.type === 'multiple_choice') {
@@ -43,6 +66,7 @@ export function normalizeQuestion(question, examId) {
     type,
     text: String(question.text ?? '').trim(),
     points: Math.max(1, Number(question.points) || 1),
+    timeMinutes: getQuestionTimeMinutes(question),
   }
 
   if (type === 'multiple_choice') {

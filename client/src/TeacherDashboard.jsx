@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from './auth/AuthContext.jsx'
+import { useEffect, useState } from 'react'
+import { useAuth } from './auth/useAuth.js'
 import {
   createExam,
   deleteExam,
+  formatTimeRemaining,
   getExamById,
+  getExamTimeLimitSeconds,
   getExamsByTeacher,
   getQuestionType,
   updateExam,
@@ -20,23 +22,34 @@ export default function TeacherDashboard() {
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
 
-  const loadExams = useCallback(async () => {
+  useEffect(() => {
     if (!user?.id) return
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await getExamsByTeacher(user.id)
-      setExams(data)
-    } catch (e) {
-      setError(e?.message ?? 'Failed to load exams')
-    } finally {
-      setLoading(false)
+
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await getExamsByTeacher(user.id)
+        if (!cancelled) setExams(data)
+      } catch (e) {
+        if (!cancelled) setError(e?.message ?? 'Failed to load exams')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
     }
   }, [user?.id])
 
-  useEffect(() => {
-    loadExams()
-  }, [loadExams])
+  async function reloadExams() {
+    if (!user?.id) return
+    const data = await getExamsByTeacher(user.id)
+    setExams(data)
+  }
 
   async function openCreate() {
     setEditingExam(null)
@@ -71,7 +84,7 @@ export default function TeacherDashboard() {
       } else {
         await createExam({ ...payload, teacherId: user.id })
       }
-      await loadExams()
+      await reloadExams()
       closeEditor()
     } finally {
       setSaving(false)
@@ -83,7 +96,7 @@ export default function TeacherDashboard() {
     setDeletingId(examId)
     try {
       await deleteExam(examId)
-      await loadExams()
+      await reloadExams()
       if (editingExam?.id === examId) closeEditor()
     } catch (e) {
       setError(e?.message ?? 'Could not delete exam')
@@ -169,7 +182,8 @@ export default function TeacherDashboard() {
                     <code>{exam.id}</code>
                   </p>
                   <p className="card-text small text-muted mb-2">
-                    {exam.durationMinutes} min · pass {exam.passPercent}%
+                    {formatTimeRemaining(getExamTimeLimitSeconds(exam))} total · pass{' '}
+                    {exam.passPercent}%
                   </p>
                   <div className="d-flex flex-wrap gap-1 mb-3">
                     <span className="badge text-bg-primary">

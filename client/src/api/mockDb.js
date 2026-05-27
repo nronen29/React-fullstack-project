@@ -59,6 +59,7 @@ export const mockDb = {
           options: ['"null"', '"undefined"', '"object"', '"number"'],
           correctIndex: 2,
           points: 25,
+          timeMinutes: 5,
         },
         {
           id: 'exam-1-q2',
@@ -67,6 +68,7 @@ export const mockDb = {
           options: ['push()', 'pop()', 'shift()', 'unshift()'],
           correctIndex: 0,
           points: 25,
+          timeMinutes: 5,
         },
         {
           id: 'exam-1-q3',
@@ -80,6 +82,7 @@ export const mockDb = {
           ],
           correctIndex: 0,
           points: 25,
+          timeMinutes: 5,
         },
         {
           id: 'exam-1-q4',
@@ -88,6 +91,7 @@ export const mockDb = {
           options: ['var', 'let', 'function', 'define'],
           correctIndex: 1,
           points: 25,
+          timeMinutes: 5,
         },
       ],
     },
@@ -108,6 +112,7 @@ export const mockDb = {
           options: ['useState', 'useEffect', 'useMemo', 'useRef'],
           correctIndex: 1,
           points: 34,
+          timeMinutes: 8,
         },
         {
           id: 'exam-2-q2',
@@ -121,6 +126,7 @@ export const mockDb = {
           ],
           correctIndex: 0,
           points: 33,
+          timeMinutes: 8,
         },
         {
           id: 'exam-2-q3',
@@ -134,6 +140,7 @@ export const mockDb = {
           ],
           correctIndex: 0,
           points: 33,
+          timeMinutes: 9,
         },
       ],
     },
@@ -159,6 +166,7 @@ export const mockDb = {
           ],
           correctIndex: 0,
           points: 100,
+          timeMinutes: 30,
         },
       ],
     },

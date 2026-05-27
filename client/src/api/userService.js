@@ -5,7 +5,8 @@ const delay = (ms = config.MOCK_DELAY_MS) => new Promise((resolve) => setTimeout
 
 export function toPublicUser(user) {
   if (!user) return null
-  const { password: _password, ...publicUser } = user
+  const publicUser = { ...user }
+  delete publicUser.password
   return publicUser
 }
 
