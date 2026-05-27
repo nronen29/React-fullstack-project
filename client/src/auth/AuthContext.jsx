@@ -1,19 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { login as loginApi, register as registerApi } from '../api/userService.js'
 import { config } from '../services/config.js'
 import { storage } from '../services/storage.js'
-
-const AuthContext = createContext(null)
+import { AuthContext } from './context.js'
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const saved = storage.get(config.AUTH_USER_KEY)
-    setUser(saved)
-    setLoading(false)
-  }, [])
+  const [user, setUser] = useState(() => storage.get(config.AUTH_USER_KEY))
+  const [loading] = useState(false)
 
   const persistUser = useCallback((nextUser) => {
     if (nextUser) {
@@ -59,12 +52,4 @@ export function AuthProvider({ children }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
-  return ctx
 }

@@ -1,56 +1,8 @@
 import { useState } from 'react'
-import { getQuestionType } from '../../api/examService.js'
+import { formatTimeRemaining, getExamTimeLimitSeconds } from '../../api/examService.js'
+import { emptyQuestion, examToFormState } from './examFormState.js'
 
 const EMPTY_OPTION = ['', '', '', '']
-
-export function emptyQuestion() {
-  return {
-    id: '',
-    type: 'multiple_choice',
-    text: '',
-    points: 10,
-    options: [...EMPTY_OPTION],
-    correctIndex: 0,
-    correctAnswer: '',
-  }
-}
-
-export function examToFormState(exam) {
-  return {
-    title: exam?.title ?? '',
-    description: exam?.description ?? '',
-    durationMinutes: exam?.durationMinutes ?? 30,
-    passPercent: exam?.passPercent ?? 60,
-    isPublished: exam?.isPublished ?? false,
-    questions: (exam?.questions ?? []).map((q) => {
-      const type = getQuestionType(q)
-      if (type === 'open') {
-        return {
-          id: q.id ?? '',
-          type: 'open',
-          text: q.text ?? '',
-          points: q.points ?? 10,
-          options: [...EMPTY_OPTION],
-          correctIndex: 0,
-          correctAnswer: q.correctAnswer ?? '',
-        }
-      }
-      const options = [...EMPTY_OPTION]
-      ;(q.options ?? []).slice(0, 4).forEach((opt, i) => {
-        options[i] = opt
-      })
-      return {
-        id: q.id ?? '',
-        type: 'multiple_choice',
-        text: q.text ?? '',
-        points: q.points ?? 10,
-        options,
-        correctIndex: q.correctIndex ?? 0,
-        correctAnswer: '',
-      }
-    }),
-  }
-}
 
 function QuestionFields({ question, index, onChange, onRemove }) {
   const update = (patch) => onChange(index, { ...question, ...patch })
@@ -130,18 +82,33 @@ function QuestionFields({ question, index, onChange, onRemove }) {
           />
         </div>
 
-        <div className="mb-3" style={{ maxWidth: '8rem' }}>
-          <label className="form-label" htmlFor={`q-points-${index}`}>
-            Points
-          </label>
-          <input
-            id={`q-points-${index}`}
-            type="number"
-            min={1}
-            className="form-control"
-            value={question.points}
-            onChange={(e) => update({ points: Number(e.target.value) })}
-          />
+        <div className="row g-3 mb-3">
+          <div className="col-6 col-md-3">
+            <label className="form-label" htmlFor={`q-points-${index}`}>
+              Points
+            </label>
+            <input
+              id={`q-points-${index}`}
+              type="number"
+              min={1}
+              className="form-control"
+              value={question.points}
+              onChange={(e) => update({ points: Number(e.target.value) })}
+            />
+          </div>
+          <div className="col-6 col-md-3">
+            <label className="form-label" htmlFor={`q-time-${index}`}>
+              Time (minutes)
+            </label>
+            <input
+              id={`q-time-${index}`}
+              type="number"
+              min={1}
+              className="form-control"
+              value={question.timeMinutes}
+              onChange={(e) => update({ timeMinutes: Number(e.target.value) })}
+            />
+          </div>
         </div>
 
         {question.type === 'multiple_choice' ? (
@@ -244,6 +211,7 @@ export default function ExamEditor({ initialExam, teacherId, onSave, onCancel, s
         type: q.type,
         text: q.text,
         points: q.points,
+        timeMinutes: q.timeMinutes,
         ...(q.type === 'multiple_choice'
           ? { options: q.options, correctIndex: q.correctIndex }
           : { correctAnswer: q.correctAnswer }),
@@ -356,8 +324,18 @@ export default function ExamEditor({ initialExam, teacherId, onSave, onCancel, s
         </div>
       </div>
 
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3 className="h5 mb-0">Questions ({form.questions.length})</h3>
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h3 className="h5 mb-0">Questions ({form.questions.length})</h3>
+          {form.questions.length > 0 && (
+            <p className="text-muted small mb-0">
+              Total exam time:{' '}
+              {formatTimeRemaining(
+                getExamTimeLimitSeconds({ questions: form.questions }),
+              )}
+            </p>
+          )}
+        </div>
         <button type="button" className="btn btn-outline-primary btn-sm" onClick={addQuestion}>
           + Add question
         </button>
