@@ -6,6 +6,8 @@ import ProtectedRoute from './auth/ProtectedRoute.jsx'
 import Layout from './components/layout/Layout.jsx'
 import TeacherDashboard from './TeacherDashboard.jsx'
 import StudentPortal from './StudentPortal.jsx'
+import SubmissionsView from './components/teacher/SubmissionsView.jsx'
+import MyResults from './components/student/MyResults.jsx'
 
 function HomeRedirect() {
   const { user, loading } = useAuth()
@@ -37,10 +39,12 @@ export default function App() {
 
         <Route element={<ProtectedRoute role="teacher" />}>
           <Route path="/teacher" element={<TeacherDashboard />} />
+          <Route path="/teacher/submissions" element={<SubmissionsView />} />
         </Route>
 
         <Route element={<ProtectedRoute role="student" />}>
           <Route path="/student" element={<StudentPortal />} />
+          <Route path="/student/results" element={<MyResults />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

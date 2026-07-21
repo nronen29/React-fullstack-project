@@ -1,0 +1,111 @@
+// Prisma schema for the E-Test System.
+// Mirrors the entities that previously lived in client/src/api/mockDb.js.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  teacher
+  student
+}
+
+enum QuestionType {
+  multiple_choice
+  open
+}
+
+enum SubmissionStatus {
+  in_progress
+  submitted
+  graded
+  abandoned
+}
+
+model User {
+  id        String   @id
+  username  String   @unique
+  password  String
+  role      Role     @default(student)
+  fullName  String
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  exams       Exam[]       @relation("TeacherExams")
+  submissions Submission[]
+}
+
+model Exam {
+  id              String   @id
+  title           String
+  description     String   @default("")
+  durationMinutes Int      @default(30)
+  passPercent     Int      @default(60)
+  isPublished     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  teacherId String
+  teacher   User   @relation("TeacherExams", fields: [teacherId], references: [id])
+
+  questions   Question[]
+  submissions Submission[]
+
+  @@index([teacherId])
+}
+
+model Question {
+  id            String       @id
+  type          QuestionType @default(multiple_choice)
+  text          String
+  points        Int          @default(1)
+  timeMinutes   Int          @default(2)
+  options       String[]     @default([])
+  correctIndex  Int?
+  correctAnswer String?
+  order         Int          @default(0)
+
+  examId String
+  exam   Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  answers Answer[]
+
+  @@index([examId])
+}
+
+model Submission {
+  id           String           @id
+  status       SubmissionStatus @default(in_progress)
+  startedAt    DateTime
+  submittedAt  DateTime?
+  scorePercent Int?
+
+  examId    String
+  exam      Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  answers Answer[]
+
+  @@index([examId])
+  @@index([studentId])
+}
+
+model Answer {
+  id            String  @id
+  selectedIndex Int?
+  textAnswer    String?
+  isCorrect     Boolean @default(false)
+
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@index([questionId])
+}
