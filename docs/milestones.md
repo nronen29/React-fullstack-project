@@ -77,9 +77,10 @@ npm run dev                  # http://localhost:5173
 
 ```bash
 docker compose up --build
-# client -> http://localhost:8080
-# api    -> http://localhost:4000/api
-# db     -> localhost:5432
+# client    -> http://localhost:8081
+# api       -> http://localhost:4000/api
+# ai-grader -> http://localhost:4100
+# db        -> localhost:5432
 ```
 
 `SEED_ON_START=true` in `docker-compose.yml` loads demo data on boot.

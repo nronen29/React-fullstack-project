@@ -1,5 +1,7 @@
 # E-Test System — Full Stack Exam Management
 
+> **Submitted by: Shilat Sadon and Neta Ronen**
+
 A full-stack web application for managing online exams and student submissions.
 Lecturers create, manage, publish, and review exams; students take exams and get
 auto-graded results — including **AI grading of open-ended answers** via a
