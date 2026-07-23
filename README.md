@@ -7,12 +7,12 @@ their graded results.
 - **Frontend:** React 19 + Vite + React Router + Bootstrap
 - **Backend:** Node.js + Express (layered/MVC) + JWT auth
 - **Database:** PostgreSQL via Prisma ORM
+- **Microservice:** standalone AI grading service for open-ended answers
 - **DevOps:** Docker + Docker Compose, GitHub Actions CI, Render deployment
 
 ## Links
 
-- **Repository:** _add your GitHub URL_
-- **Live demo (frontend):** _add your Render web URL_
+- **Repository:** https://github.com/nronen29/React-fullstack-project
 - **Live API:** _add your Render API URL_ (`/api/health` for a health check)
 
 ## Features
@@ -35,18 +35,23 @@ their graded results.
 - Role-based authorization; correct answers never sent to students
 - Request validation (zod), central error handling, structured logging (winston/morgan)
 - Unit tests (Jest + Vitest), CI pipeline, containerized with Docker
+- **Microservice:** AI grading service scores open-ended answers over HTTP
+  (LLM when an API key is set, keyword heuristic otherwise), with graceful
+  fallback to local grading
 
 ## Repository structure
 
 ```
 .
-├── client/            # React SPA (Vite)
-├── server/            # Express API + Prisma
-│   └── prisma/        # schema + seed
-├── docs/              # architecture, ERD, UML, sequence diagrams, milestones
-├── docker-compose.yml # db + api + web
-├── render.yaml        # Render deployment blueprint
-└── .github/workflows/ # CI
+├── client/                 # React SPA (Vite)
+├── server/                 # Express API + Prisma
+│   └── prisma/             # schema + seed
+├── services/
+│   └── ai-grader/          # AI grading microservice
+├── docs/                   # architecture, ERD, UML, sequence diagrams, milestones
+├── docker-compose.yml      # db + api + ai-grader + web
+├── render.yaml             # Render deployment blueprint
+└── .github/workflows/      # CI
 ```
 
 ## Quick start (Docker - recommended)
@@ -55,8 +60,9 @@ their graded results.
 docker compose up --build
 ```
 
-- Frontend: http://localhost:8080
+- Frontend: http://localhost:8081
 - API: http://localhost:4000/api
+- AI grader: http://localhost:4100
 - PostgreSQL: localhost:5432
 
 Demo data is seeded automatically (`SEED_ON_START=true`).

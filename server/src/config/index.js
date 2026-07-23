@@ -25,4 +25,10 @@ export const config = {
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? '*',
   LOG_LEVEL: process.env.LOG_LEVEL ?? (NODE_ENV === 'production' ? 'info' : 'debug'),
   BCRYPT_ROUNDS: Number(process.env.BCRYPT_ROUNDS ?? 10),
+
+  // AI grading microservice. If AI_GRADER_URL is empty, open questions fall
+  // back to local exact-match grading.
+  AI_GRADER_URL: process.env.AI_GRADER_URL ?? '',
+  AI_GRADER_KEY: process.env.AI_GRADER_KEY ?? '',
+  AI_GRADER_TIMEOUT_MS: Number(process.env.AI_GRADER_TIMEOUT_MS ?? 12000),
 }

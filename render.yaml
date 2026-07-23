@@ -32,6 +32,34 @@ services:
       # Set this to the deployed frontend URL after first deploy.
       - key: CORS_ORIGIN
         sync: false
+      # Set to the AI grader's URL, e.g. https://etest-ai-grader.onrender.com
+      - key: AI_GRADER_URL
+        sync: false
+      # Optional shared secret; must equal etest-ai-grader's SERVICE_KEY.
+      - key: AI_GRADER_KEY
+        sync: false
+
+  # AI grading microservice (open-ended answers)
+  - type: web
+    name: etest-ai-grader
+    runtime: node
+    plan: free
+    rootDir: services/ai-grader
+    buildCommand: npm ci
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4100
+      # Must match etest-api's AI_GRADER_KEY (set the same value on both).
+      - key: SERVICE_KEY
+        sync: false
+      # Leave AI_API_KEY unset for heuristic mode, or set it (+ AI_BASE_URL,
+      # AI_MODEL) to grade with a real LLM.
+      - key: AI_API_KEY
+        sync: false
 
   # Frontend (static React build served by Render CDN)
   - type: web

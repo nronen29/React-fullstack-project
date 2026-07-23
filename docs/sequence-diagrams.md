@@ -1,6 +1,7 @@
 # Sequence diagrams - key scenarios
 
-Three end-to-end flows showing how data moves across Client, Server, and DB.
+End-to-end flows showing how data moves across Client, Server, DB, and the AI
+grader microservice.
 
 ## Scenario 1: Login (student or teacher)
 
@@ -105,4 +106,37 @@ sequenceDiagram
   SS-->>EX: result
   EX->>SP: onComplete(result)
   SP->>S: show score + pass/fail
+```
+
+## Scenario 4: Grading an open-ended answer via the AI microservice
+
+```mermaid
+sequenceDiagram
+  participant SVC as submissionService (API)
+  participant GS as gradingService (API)
+  participant AC as aiGraderClient (API)
+  participant AI as ai-grader microservice
+  participant LLM as LLM or heuristic
+  participant DB as PostgreSQL
+
+  SVC->>GS: gradeAttempt(exam, answers)
+  loop each question
+    alt multiple choice
+      GS->>GS: compare selectedIndex locally
+    else open-ended
+      GS->>AC: gradeOpenAnswer(question, studentAnswer)
+      AC->>AI: POST /grade (X-Service-Key)
+      alt AI reachable
+        AI->>LLM: score answer (LLM if key set, else heuristic)
+        LLM-->>AI: score + feedback
+        AI-->>AC: { score, isCorrect, feedback }
+        AC-->>GS: result
+      else AI down / disabled
+        AC-->>GS: null
+        GS->>GS: fallback to exact-match
+      end
+    end
+  end
+  GS-->>SVC: { scorePercent, passed, questionResults(+feedback) }
+  SVC->>DB: persist submission + answers (with feedback)
 ```

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from './auth/useAuth.js'
-import { getExamById } from './api/examService.js'
+import { getExamById, getQuestionType } from './api/examService.js'
 import ExamSession from './components/student/ExamSession.jsx'
 
 export default function StudentPortal() {
@@ -53,6 +53,15 @@ export default function StudentPortal() {
   function dismissOutcome() {
     setOutcome(null)
   }
+
+  // Per-question AI feedback for open (written) answers, if any.
+  const feedbackItems = (outcome?.result?.graded?.questionResults ?? [])
+    .map((r) => {
+      const q = outcome?.exam?.questions?.find((qq) => qq.id === r.questionId)
+      if (!q || getQuestionType(q) !== 'open') return null
+      return { id: r.questionId, text: q.text, earned: r.earned, points: r.points, feedback: r.feedback }
+    })
+    .filter(Boolean)
 
   return (
     <div className="container py-4">
@@ -146,6 +155,21 @@ export default function StudentPortal() {
                           : `You need ${outcome.exam?.passPercent}% to pass.`}
                       </p>
                     </>
+                  )}
+                  {feedbackItems.length > 0 && (
+                    <div className="mt-3">
+                      <h3 className="h6 mb-1">AI feedback on written answers</h3>
+                      <ul className="small mb-0 ps-3">
+                        {feedbackItems.map((it) => (
+                          <li key={it.id} className="mb-1">
+                            <span className="fw-semibold">
+                              {it.earned}/{it.points} pts
+                            </span>
+                            {it.feedback ? ` — ${it.feedback}` : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
                 <button

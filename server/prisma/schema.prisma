@@ -100,6 +100,7 @@ model Answer {
   selectedIndex Int?
   textAnswer    String?
   isCorrect     Boolean @default(false)
+  feedback      String?
 
   submissionId String
   submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)

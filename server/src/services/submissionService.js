@@ -1,6 +1,7 @@
 import { prisma } from '../models/prismaClient.js'
 import { ApiError } from '../utils/ApiError.js'
-import { gradeExamAttempt, getQuestionType } from '../utils/grading.js'
+import { getQuestionType } from '../utils/grading.js'
+import { gradeAttempt } from './gradingService.js'
 import { nextSubmissionId, nextAnswerId } from '../utils/ids.js'
 import { getExamWithAnswers } from './examService.js'
 
@@ -30,7 +31,7 @@ export async function submitAttempt({ examId, studentId, answers, status, starte
     return { submission: serializeSubmission(submission), graded: null }
   }
 
-  const graded = gradeExamAttempt(exam, answers)
+  const graded = await gradeAttempt(exam, answers)
 
   let answerCounter = (await prisma.answer.findMany({ select: { id: true } })).map((a) => a.id)
   const answerRows = graded.questionResults.map((result) => {
@@ -49,6 +50,7 @@ export async function submitAttempt({ examId, studentId, answers, status, starte
           : null,
       textAnswer: type === 'open' ? String(response?.textAnswer ?? '') : null,
       isCorrect: result.isCorrect,
+      feedback: result.feedback ?? null,
     }
   })
 

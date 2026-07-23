@@ -28,13 +28,24 @@ flowchart LR
     PG[(PostgreSQL)]
   end
 
+  subgraph Micro [AI Grader Microservice]
+    Grader[Express /grade]
+    Engine[Heuristic or LLM]
+  end
+
   UI --> ApiLayer --> Http
   AuthCtx --> Http
   Http -->|"HTTPS JSON + Bearer JWT"| Routes
   Routes --> Middleware --> Controllers --> Services --> Prisma --> PG
   Services --> Logger
+  Services -->|"HTTP + X-Service-Key (open questions)"| Grader --> Engine
   Http -. token .- Store
 ```
+
+The system is a monolith API plus one **microservice**: the AI grader is an
+independently deployable Express service that scores open-ended answers. The
+main API calls it over HTTP only for open questions, and falls back to local
+exact-match grading if it is disabled or unreachable.
 
 ### Who talks to whom / who stores what
 
@@ -151,6 +162,20 @@ prisma/
   schema.prisma   # data model
   seed.js         # demo data (ported from the old mock DB)
 ```
+
+## 3b. AI grading microservice (`services/ai-grader/`)
+
+A small, standalone Express service with a single responsibility: grade one
+open-ended answer.
+
+- Endpoint: `POST /grade` with `{ questionText, expectedAnswer, studentAnswer, maxPoints }` -> `{ score, isCorrect, feedback, provider }`.
+- Auth: optional shared secret via the `X-Service-Key` header.
+- Two modes: uses an OpenAI-compatible **LLM** when `AI_API_KEY` is set; otherwise a keyword-overlap **heuristic** (works offline). The main API also degrades gracefully to local exact-match if the service is down.
+- Deployed as its own container (`docker-compose`) and its own Render service, demonstrating a microservice boundary and inter-service communication.
+
+Why a separate service: grading logic (and any future model/provider swap or
+scaling) is isolated from the core API; a failure or slowdown there cannot break
+exam CRUD or auth.
 
 ## 4. API surface
 
