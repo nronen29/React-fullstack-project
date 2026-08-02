@@ -1,0 +1,11 @@
+# Keep shell scripts LF so they run inside Linux containers.
+*.sh text eol=lf
+
+# Normalize common text files.
+*.js text
+*.jsx text
+*.json text
+*.md text
+*.yml text
+*.yaml text
+*.prisma text

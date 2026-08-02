@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: etest
+      POSTGRES_PASSWORD: etest
+      POSTGRES_DB: etest
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U etest -d etest"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://etest:etest@db:5432/etest?schema=public
+      JWT_SECRET: dev-only-secret-change-me
+      JWT_EXPIRES_IN: 2h
+      NODE_ENV: production
+      PORT: 4000
+      CORS_ORIGIN: "http://localhost:8081"
+      SEED_ON_START: "true"
+      AI_GRADER_URL: "http://ai-grader:4100"
+      AI_GRADER_KEY: "dev-service-key"
+    depends_on:
+      db:
+        condition: service_healthy
+      ai-grader:
+        condition: service_started
+    ports:
+      - "4000:4000"
+
+  ai-grader:
+    build: ./services/ai-grader
+    restart: unless-stopped
+    environment:
+      PORT: 4100
+      NODE_ENV: production
+      SERVICE_KEY: "dev-service-key"
+      # AI_API_KEY left empty -> runs in offline heuristic mode.
+      # Set AI_API_KEY / AI_BASE_URL / AI_MODEL to enable a real LLM.
+    ports:
+      - "4100:4100"
+
+  client:
+    build:
+      context: ./client
+      args:
+        VITE_API_BASE: "http://localhost:4000/api"
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    depends_on:
+      - server
+
+volumes:
+  pgdata:

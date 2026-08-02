@@ -1,38 +1,54 @@
-import { useState } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from './auth/useAuth.js'
+import LoginPage from './auth/LoginPage.jsx'
+import RegisterPage from './auth/RegisterPage.jsx'
+import ProtectedRoute from './auth/ProtectedRoute.jsx'
+import Layout from './components/layout/Layout.jsx'
 import TeacherDashboard from './TeacherDashboard.jsx'
 import StudentPortal from './StudentPortal.jsx'
+import SubmissionsView from './components/teacher/SubmissionsView.jsx'
+import MyResults from './components/student/MyResults.jsx'
+
+function HomeRedirect() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="container py-5">
+        <div className="alert alert-info" role="status">
+          Loading…
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />
+}
 
 export default function App() {
-  const [role, setRole] = useState('teacher')
-
   return (
-    <div className="min-vh-100 bg-light">
-      <nav className="navbar navbar-expand-lg navbar-dark bg-primary mb-0">
-        <div className="container">
-          <span className="navbar-brand mb-0 h1 fs-4">E-Test System</span>
-          <div className="d-flex align-items-center gap-2">
-            <span className="text-white-50 small me-2 d-none d-sm-inline">Role</span>
-            <div className="btn-group" role="group" aria-label="Switch role">
-              <button
-                type="button"
-                className={`btn btn-sm ${role === 'teacher' ? 'btn-light' : 'btn-outline-light'}`}
-                onClick={() => setRole('teacher')}
-              >
-                Teacher
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${role === 'student' ? 'btn-light' : 'btn-outline-light'}`}
-                onClick={() => setRole('student')}
-              >
-                Student
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<HomeRedirect />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      <main>{role === 'teacher' ? <TeacherDashboard /> : <StudentPortal />}</main>
-    </div>
+        <Route element={<ProtectedRoute role="teacher" />}>
+          <Route path="/teacher" element={<TeacherDashboard />} />
+          <Route path="/teacher/submissions" element={<SubmissionsView />} />
+        </Route>
+
+        <Route element={<ProtectedRoute role="student" />}>
+          <Route path="/student" element={<StudentPortal />} />
+          <Route path="/student/results" element={<MyResults />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   )
 }

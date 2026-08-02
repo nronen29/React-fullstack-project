@@ -1,5 +1,14 @@
 {
-  "dependencies": {
-    "bootstrap": "^5.3.8"
+  "name": "e-test-system",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Full Stack Exam Management System (React + Express + PostgreSQL)",
+  "scripts": {
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "install:all": "npm --prefix client install && npm --prefix server install",
+    "test": "npm --prefix server test && npm --prefix client test",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   }
 }

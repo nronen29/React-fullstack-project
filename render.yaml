@@ -1,0 +1,78 @@
+# Render Blueprint: provisions a PostgreSQL database, the Node API, and the
+# static React frontend. Deploy via the Render dashboard "New + Blueprint".
+databases:
+  - name: etest-db
+    databaseName: etest
+    user: etest
+    plan: free
+
+services:
+  # Backend API (Node/Express + Prisma)
+  - type: web
+    name: etest-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npx prisma migrate deploy && node src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: etest-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 2h
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      # Set this to the deployed frontend URL after first deploy.
+      - key: CORS_ORIGIN
+        sync: false
+      # Set to the AI grader's URL, e.g. https://etest-ai-grader.onrender.com
+      - key: AI_GRADER_URL
+        sync: false
+      # Optional shared secret; must equal etest-ai-grader's SERVICE_KEY.
+      - key: AI_GRADER_KEY
+        sync: false
+
+  # AI grading microservice (open-ended answers)
+  - type: web
+    name: etest-ai-grader
+    runtime: node
+    plan: free
+    rootDir: services/ai-grader
+    buildCommand: npm ci
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4100
+      # Must match etest-api's AI_GRADER_KEY (set the same value on both).
+      - key: SERVICE_KEY
+        sync: false
+      # Leave AI_API_KEY unset for heuristic mode, or set it (+ AI_BASE_URL,
+      # AI_MODEL) to grade with a real LLM.
+      - key: AI_API_KEY
+        sync: false
+
+  # Frontend (static React build served by Render CDN)
+  - type: web
+    name: etest-web
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Set to the deployed API URL, e.g. https://etest-api.onrender.com/api
+      - key: VITE_API_BASE
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
