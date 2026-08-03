@@ -131,9 +131,13 @@ sequenceDiagram
         LLM-->>AI: score + feedback
         AI-->>AC: { score, isCorrect, feedback }
         AC-->>GS: result
+      else timeout (possible cold start)
+        AC->>AI: retry POST /grade (longer timeout)
+        AI-->>AC: { score, isCorrect, feedback }
+        AC-->>GS: result
       else AI down / disabled
         AC-->>GS: null
-        GS->>GS: fallback to exact-match
+        GS->>GS: fallback to local keyword overlap
       end
     end
   end

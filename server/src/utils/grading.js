@@ -16,6 +16,61 @@ function normalizeText(value) {
     .toLowerCase()
 }
 
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'to', 'of', 'and', 'or', 'in',
+  'on', 'at', 'it', 'its', 'that', 'this', 'for', 'with', 'as', 'by', 'be',
+  'from', 'which', 'only', 'can', 'will', 'not',
+])
+
+function tokenize(text) {
+  return String(text ?? '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter((word) => word && !STOP_WORDS.has(word))
+}
+
+const PASS_RATIO = 0.6
+
+/**
+ * Local scorer for one open answer, used when the AI grader is unreachable.
+ * Mirrors the microservice heuristic (keyword overlap) rather than comparing
+ * strings exactly, so punctuation or wording differences cost partial credit
+ * instead of the whole question.
+ */
+export function scoreOpenAnswerLocally({ expectedAnswer, studentAnswer, maxPoints }) {
+  const points = Math.max(1, Number(maxPoints) || 1)
+
+  if (!String(studentAnswer ?? '').trim()) {
+    return { score: 0, isCorrect: false, feedback: 'No answer provided.' }
+  }
+
+  const expected = tokenize(expectedAnswer)
+  const student = new Set(tokenize(studentAnswer))
+
+  if (expected.length === 0) {
+    // No reference answer to compare against — give the benefit of the doubt.
+    return { score: points, isCorrect: true, feedback: 'Answer recorded.' }
+  }
+
+  const matched = expected.filter((word) => student.has(word))
+  const missing = [...new Set(expected.filter((word) => !student.has(word)))]
+  const ratio = matched.length / expected.length
+  const score = Math.round(points * ratio)
+  const isCorrect = ratio >= PASS_RATIO
+
+  let feedback
+  if (ratio === 1) {
+    feedback = 'Correct — your answer covers all the key points.'
+  } else if (isCorrect) {
+    feedback = `Mostly correct. Consider also mentioning: ${missing.slice(0, 4).join(', ')}.`
+  } else {
+    feedback = `Partially correct. Key ideas missing: ${missing.slice(0, 5).join(', ')}.`
+  }
+
+  return { score, isCorrect, feedback, similarity: Number(ratio.toFixed(2)) }
+}
+
 /**
  * @param {{questions: Array}} exam
  * @param {Record<string, { selectedIndex?: number, textAnswer?: string }>} answers

@@ -44,8 +44,9 @@ flowchart LR
 
 The system is a monolith API plus one **microservice**: the AI grader is an
 independently deployable Express service that scores open-ended answers. The
-main API calls it over HTTP only for open questions, and falls back to local
-exact-match grading if it is disabled or unreachable.
+main API calls it over HTTP only for open questions, retries once with a longer
+timeout to absorb cold starts, and falls back to local keyword-overlap grading
+if it is disabled or unreachable.
 
 ### Who talks to whom / who stores what
 
@@ -170,7 +171,7 @@ open-ended answer.
 
 - Endpoint: `POST /grade` with `{ questionText, expectedAnswer, studentAnswer, maxPoints }` -> `{ score, isCorrect, feedback, provider }`.
 - Auth: optional shared secret via the `X-Service-Key` header.
-- Two modes: uses an OpenAI-compatible **LLM** when `AI_API_KEY` is set; otherwise a keyword-overlap **heuristic** (works offline). The main API also degrades gracefully to local exact-match if the service is down.
+- Two modes: uses an OpenAI-compatible **LLM** when `AI_API_KEY` is set; otherwise a keyword-overlap **heuristic** (works offline). The main API also degrades gracefully to its own local keyword-overlap scorer if the service is down.
 - Deployed as its own container (`docker-compose`) and its own Render service, demonstrating a microservice boundary and inter-service communication.
 
 Why a separate service: grading logic (and any future model/provider swap or

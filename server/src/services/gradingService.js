@@ -1,14 +1,8 @@
-import { getQuestionType } from '../utils/grading.js'
+import { getQuestionType, scoreOpenAnswerLocally } from '../utils/grading.js'
 import { gradeOpenAnswer } from './aiGraderClient.js'
 
-function normalizeText(value) {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-}
-
 // Async grading: multiple-choice is scored locally (instant); open-ended
-// answers are sent to the AI grading microservice, with a local exact-match
+// answers are sent to the AI grading microservice, with a local keyword-overlap
 // fallback if the service is disabled or unreachable. Supports partial credit
 // and per-question feedback.
 export async function gradeAttempt(exam, answers = {}) {
@@ -51,14 +45,14 @@ export async function gradeAttempt(exam, answers = {}) {
         isCorrect = Boolean(ai.isCorrect)
         feedback = ai.feedback ?? null
       } else {
-        // Fallback: exact case-insensitive match.
-        isCorrect = answered && normalizeText(text) === normalizeText(question.correctAnswer)
-        earned = isCorrect ? points : 0
-        feedback = !answered
-          ? 'No answer provided.'
-          : isCorrect
-            ? 'Correct.'
-            : 'Does not match the expected answer.'
+        const local = scoreOpenAnswerLocally({
+          expectedAnswer: question.correctAnswer,
+          studentAnswer: text,
+          maxPoints: points,
+        })
+        earned = local.score
+        isCorrect = local.isCorrect
+        feedback = local.feedback
       }
     }
 
