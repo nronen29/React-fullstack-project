@@ -143,7 +143,7 @@ sequenceDiagram
   Note over GS: multiple-choice graded locally
   GS->>AI: POST /grade (open questions)
   AI-->>GS: { score, isCorrect, feedback }
-  Note over GS: falls back to exact-match if AI down
+  Note over GS: retries on timeout, then falls back to local scoring
   GS-->>API: score + per-question feedback
   API->>DB: save submission + answers
   API-->>EX: { submission, graded }
@@ -262,9 +262,10 @@ job is to grade one open-ended answer.
 - **Endpoint:** `POST /grade` with `{ questionText, expectedAnswer, studentAnswer, maxPoints }` → `{ score, isCorrect, feedback, provider }`
 - **Two modes:** uses an OpenAI-compatible **LLM** when `AI_API_KEY` is set;
   otherwise a keyword-overlap **heuristic** that runs offline. Check the mode at `/health`.
-- **Resilience:** the main API attaches a shared secret (`X-Service-Key`) and
-  gracefully falls back to local exact-match grading if the service is disabled
-  or unreachable — so submissions never fail.
+- **Resilience:** the main API attaches a shared secret (`X-Service-Key`), pings
+  `/health` at startup to wake a sleeping grader, and retries once with a longer
+  timeout before falling back to local keyword-overlap grading — so submissions
+  never fail, and a cold start does not silently cost a student their score.
 - **Why separate:** grading logic (and any future model/provider swap or scaling)
   is isolated from the core API; a failure there cannot break exam CRUD or auth.
 
@@ -342,6 +343,7 @@ npm run dev                   # http://localhost:5173
 | server | `JWT_SECRET`, `JWT_EXPIRES_IN` | Token signing |
 | server | `CORS_ORIGIN` | Allowed frontend origin(s) |
 | server | `AI_GRADER_URL`, `AI_GRADER_KEY` | AI grader location + shared secret |
+| server | `AI_GRADER_TIMEOUT_MS`, `AI_GRADER_RETRY_TIMEOUT_MS`, `AI_GRADER_WARMUP` | Grader request budgets + cold-start warm-up |
 | server | `SEED_ON_START`, `AUTO_SEED` | Demo seeding controls |
 | server | `PORT`, `NODE_ENV`, `LOG_LEVEL`, `BCRYPT_ROUNDS` | Runtime tuning |
 | ai-grader | `SERVICE_KEY` | Shared secret (must match `AI_GRADER_KEY`) |

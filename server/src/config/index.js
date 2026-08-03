@@ -27,8 +27,13 @@ export const config = {
   BCRYPT_ROUNDS: Number(process.env.BCRYPT_ROUNDS ?? 10),
 
   // AI grading microservice. If AI_GRADER_URL is empty, open questions fall
-  // back to local exact-match grading.
+  // back to local keyword-overlap grading.
   AI_GRADER_URL: process.env.AI_GRADER_URL ?? '',
   AI_GRADER_KEY: process.env.AI_GRADER_KEY ?? '',
   AI_GRADER_TIMEOUT_MS: Number(process.env.AI_GRADER_TIMEOUT_MS ?? 12000),
+  // Second attempt budget. On free hosting tiers an idle grader can take ~50s
+  // to wake, which is far longer than a healthy request should ever take.
+  AI_GRADER_RETRY_TIMEOUT_MS: Number(process.env.AI_GRADER_RETRY_TIMEOUT_MS ?? 60000),
+  // Ping the grader at startup so the first real submission hits a warm service.
+  AI_GRADER_WARMUP: (process.env.AI_GRADER_WARMUP ?? 'true') !== 'false',
 }

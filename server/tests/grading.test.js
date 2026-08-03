@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals'
-import { gradeExamAttempt, getQuestionType } from '../src/utils/grading.js'
+import { gradeExamAttempt, getQuestionType, scoreOpenAnswerLocally } from '../src/utils/grading.js'
 
 const exam = {
   passPercent: 60,
@@ -51,5 +51,54 @@ describe('gradeExamAttempt', () => {
     const result = gradeExamAttempt({ passPercent: 50, questions: [] }, {})
     expect(result.scorePercent).toBe(0)
     expect(result.totalPoints).toBe(0)
+  })
+})
+
+describe('scoreOpenAnswerLocally', () => {
+  const expectedAnswer =
+    'A closure is a function that retains access to variables from its outer lexical scope.'
+
+  test('ignores punctuation and casing differences', () => {
+    const result = scoreOpenAnswerLocally({
+      expectedAnswer,
+      studentAnswer: 'a CLOSURE is a function that retains access to variables from its outer lexical scope',
+      maxPoints: 20,
+    })
+    expect(result.score).toBe(20)
+    expect(result.isCorrect).toBe(true)
+  })
+
+  test('awards partial credit instead of zero for an incomplete answer', () => {
+    const result = scoreOpenAnswerLocally({
+      expectedAnswer,
+      studentAnswer: 'A function that retains access to its outer scope.',
+      maxPoints: 20,
+    })
+    expect(result.score).toBeGreaterThan(0)
+    expect(result.score).toBeLessThan(20)
+  })
+
+  test('scores an unrelated answer low and marks it incorrect', () => {
+    const result = scoreOpenAnswerLocally({
+      expectedAnswer,
+      studentAnswer: 'A closure is a way to close a browser tab.',
+      maxPoints: 20,
+    })
+    expect(result.isCorrect).toBe(false)
+    expect(result.score).toBeLessThan(10)
+  })
+
+  test('gives no credit for an empty answer', () => {
+    const result = scoreOpenAnswerLocally({ expectedAnswer, studentAnswer: '   ', maxPoints: 20 })
+    expect(result).toMatchObject({ score: 0, isCorrect: false })
+  })
+
+  test('does not punish the student when the exam has no reference answer', () => {
+    const result = scoreOpenAnswerLocally({
+      expectedAnswer: '',
+      studentAnswer: 'Any reasonable explanation.',
+      maxPoints: 20,
+    })
+    expect(result).toMatchObject({ score: 20, isCorrect: true })
   })
 })
